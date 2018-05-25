@@ -3,7 +3,7 @@
     "suppressImplicitAnyIndexErrors": true,
     "noImplicitAny": true,
     "sourceMap": true,
-    "target": "es5",
+    "target": "es2017",
     "module": "commonjs",
     "declaration": true,
     "outDir": "./dist",
@@ -16,12 +16,16 @@
       "./node_modules/@types"
     ],
     "lib": [
-      "es2015",
+      "es2017",
       "dom"
     ]
   },
+  "include": [
+        "src/**/*"
+    ],
   "exclude": [
     "./test/*.ts",
     "./examples"
-  ]
+  ],
+  "watch": true
 }

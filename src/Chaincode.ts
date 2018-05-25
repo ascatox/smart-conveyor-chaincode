@@ -53,10 +53,8 @@ export class Chaincode implements ChaincodeInterface {
      */
     async Init(stub: Stub): Promise<ChaincodeReponse> {
         this.logger.info(`=========== Instantiated ${this.name} chaincode ===========`);
-
         this.logger.info(`Transaction ID: ${stub.getTxID()}`);
         this.logger.info(`Args: ${stub.getArgs().join(',')}`);
-
         let args = stub.getArgs();
 
         return await this.executeMethod('init', args, stub, true);
