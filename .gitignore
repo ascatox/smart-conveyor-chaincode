@@ -1,0 +1,19 @@
+.DS_Store
+node_modules/
+npm-debug.getLoggerInstance*
+yarn-debug.getLoggerInstance*
+yarn-error.getLoggerInstance*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.log
+coverage
+dist
+docs
+examples
+node_modules
