@@ -6,7 +6,6 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "build": "npm run clean && tsc",
-        "test": "mocha -r ts-node/register test/**/*.spec.ts --reporter spec",
         "lint": "tslint --fix -c tslint.json './src/**/*.ts'",
         "clean": "rimraf dist",
         "prepare": "npm run build",
