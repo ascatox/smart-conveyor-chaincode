@@ -109,6 +109,32 @@ export class Transform {
         return allResults;
     };
 
+     /**
+     * Transform iterator to array of objects
+     *
+     * @param {'fabric-shim'.Iterators.Iterator} iterator
+     * @returns {Promise<Array>}
+     */
+    static async iteratorToObjectList(iterator: Iterators.Iterator) {
+        const allResults = [];
+        let res;
+        while (res == null || !res.done) {
+            res = await iterator.next();
+            if (res.value && res.value.value.toString()) {
+               let parsedItem = {};
+                try {
+                    parsedItem = JSON.parse(res.value.value.toString('utf8'));
+                }
+                catch (err) {
+                    parsedItem = res.value.value.toString('utf8');
+                }
+                allResults.push(parsedItem);
+            }
+        }
+        await iterator.close();
+        return allResults;
+    }
+    ;
     /**
      * Transform iterator to array of objects
      *
