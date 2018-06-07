@@ -191,7 +191,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         }
     }
 
-
 	/* methods POST */
 	/* controlBays() */
 	/* The controlBays method is called to extract and control all bays  */
@@ -385,7 +384,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
          }
     }
 
-    
     /* methods POST */
 	/* conveyorItemOutConveyorBay() */
     /* The conveyorItemOutConveyorBay method is called to update a Bay and update the items in the Conveyor Belt */
