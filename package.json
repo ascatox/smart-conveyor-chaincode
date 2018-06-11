@@ -52,11 +52,6 @@
         "registry": "https://registry.npmjs.org",
         "access": "public"
     },
-    "husky": {
-        "hooks": {
-            "pre-push": "npm run lint && npm run test"
-        }
-    },
     "watch": {
         "{src,test}/**/*.ts": [
             "test"
