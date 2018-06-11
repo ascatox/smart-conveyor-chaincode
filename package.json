@@ -20,7 +20,7 @@
     "author": "massimiliano.alberti@eng.it",
     "license": "",
     "devDependencies": {
-        "@theledger/fabric-mock-stub": "^1.0.1",
+        "@theledger/fabric-mock-stub": "^1.3.0",
         "@theledger/fabric-shim-types": "https://github.com/wearetheledger/fabric-shim-types",
         "@types/chai": "^4.0.4",
         "@types/mocha": "^2.2.43",

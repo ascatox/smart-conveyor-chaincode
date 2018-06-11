@@ -1,4 +1,4 @@
-import { ConveyorItemType } from 'C:/Users/alberti/Sviluppo/smart-conveyor-chaincode/src';
+import { ConveyorItemType } from './ConveyorItemType';
 
 export class ConveyorBay {
     public typeObject  : string;
@@ -15,7 +15,7 @@ export class ConveyorBay {
         this.id = id;
         this.capacity = capacity;
         this.load = load;
-        this.preference = null;
+        this.preference = new Array<ConveyorItemType>();
         this.enable = enable;
         this.position = position;
         this.datetime = new Date();

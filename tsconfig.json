@@ -11,7 +11,7 @@
       "@theledger/fabric-shim-types",
       "@types/chai"
     ],
-    "rootDir": "./src",
+    "rootDir": "./",
     "typeRoots": [
       "./node_modules/@types"
     ],
@@ -21,10 +21,10 @@
     ]
   },
   "include": [
-        "src/**/*"
+        "src/**/*",
+        "test/**/*"
     ],
   "exclude": [
-    "./test/*.ts",
     "./examples"
   ],
   "watch": true

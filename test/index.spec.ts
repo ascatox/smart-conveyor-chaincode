@@ -1,26 +1,25 @@
 /* tslint:disable */
 
 import { ChaincodeMockStub } from '@theledger/fabric-mock-stub';
-import { TestChaincode } from './TestChaincode';
 import { ChaincodeReponse } from 'fabric-shim';
 import { Transform } from '../src/utils/datatransform';
 
 import { expect } from 'chai';
+import { SmartConveyorChaincode } from '../src';
+import { ConveyorItem } from '../src/ConveyorItem';
+import { ConveyorBay } from '../src/ConveyorBay';
 
-const chaincode = new TestChaincode();
+const chaincode = new SmartConveyorChaincode();
 
 describe('Test Mockstub', () => {
     it('Should be able to init', async () => {
 
         const stub = new ChaincodeMockStub('mock', chaincode);
-
         const args = ['arg1', 'arg2'];
-
         const response: ChaincodeReponse = await stub.mockInit('uudif', args);
-
-        expect(Transform.bufferToObject(response.payload)['args']).to.deep.equal(args);
+        expect(response.status).to.deep.equal(200);
     });
-
+    /*
     const stubWithInit = new ChaincodeMockStub('mock', chaincode);
 
     it('Should be able to init and make some cars', async () => {
@@ -57,7 +56,7 @@ describe('Test Mockstub', () => {
 
         expect(Transform.bufferToObject(response.payload)).to.be.length(10);
     });
-
+    
     it('Should be able to mock composite keys', async () => {
         const stub = new ChaincodeMockStub('GetStateByPartialCompositeKeyTest', chaincode);
 
@@ -127,28 +126,38 @@ describe('Test Mockstub', () => {
         expect(Object.keys(stub.state).length).to.equal(1);
     });
 
+    */
+    it('Should be able to control bays', async () => {
+        const stub = new ChaincodeMockStub('mock', chaincode);
+        const args = ['arg1', 'arg2'];
+        await stub.mockInit('test', args);
 
-    it('Should be able to query using rich queries', async () => {
-
-        const query = {
-            selector: {
-                make: "Toyota"
-            }
-        };
-
-        const it = await stubWithInit.getQueryResult(JSON.stringify(query))
-
-        const items = await Transform.iteratorToList(it);
-
-        expect(items).to.deep.include({
-            make: 'Toyota',
-            model: 'Prius',
-            color: 'blue',
-            owner: 'Tomoko',
-            docType: 'car'
-        })
+        const response: ChaincodeReponse = await stub.mockInvoke('test', ['controlBays']);
+        expect(response.status).to.deep.equal(200);
     });
 
+    it('Should be able to store conveyor item', async () => {
+        const stub = new ChaincodeMockStub('mock', chaincode);
+        const args = ['arg1', 'arg2'];
+        await stub.mockInit('test', args);
+
+        const conveyorBay: ConveyorBay = new ConveyorBay('1', 10, 0, true, 1);
+        const item: ConveyorItem = {
+            typeObject: null,
+            id: '7784199',
+            type: {
+                id: '869990965261',
+                description: 'owen'
+            },
+            conveyorBay: conveyorBay,
+            state: null
+        };
+        const response: ChaincodeReponse = await stub.mockInvoke('test', ['storeConveyorItem', JSON.stringify(item)]);
+        expect(response.status).to.deep.equal(200);
+    });
+
+
+    /*
     it('Should be able to query using an rich query operator ', async () => {
 
         const query = {
@@ -165,5 +174,6 @@ describe('Test Mockstub', () => {
 
         expect(items).to.be.length(2)
     });
+    */
 
 });
