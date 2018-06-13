@@ -5,6 +5,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "start": "node ./dist/src/index.js",
         "build": "npm run clean && tsc",
         "lint": "tslint --fix -c tslint.json './src/**/*.ts'",
         "clean": "rimraf dist",
