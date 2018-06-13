@@ -46,7 +46,8 @@
         "google-protobuf": "^3.5.0",
         "lodash": "^4.17.5",
         "winston": "^2.4.0",
-        "yup": "^0.24.1"
+        "yup": "^0.24.1",
+        "moment":"*"
     },
     "publishConfig": {
         "registry": "https://registry.npmjs.org",

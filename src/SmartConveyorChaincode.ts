@@ -1,7 +1,5 @@
 import shim = require('fabric-shim');
 import { ChaincodeInterface, ChaincodeReponse, Stub } from 'fabric-shim';
-import { Helpers } from './utils/helpers';
-import { LoggerInstance } from 'winston';
 import { ERRORS } from './constants/errors';
 import { ChaincodeError } from './ChaincodeError';
 import { StubHelper } from './StubHelper';
@@ -9,6 +7,8 @@ import { Transform } from './utils/datatransform';
 import { ConveyorBay } from './ConveyorBay';
 import { ConveyorItemType } from '.';
 import { ConveyorItem } from './ConveyorItem';
+import { EventPayload } from '../dist/src/EventPayload';
+
 
 /**
  * The SmartConveyorChaincode class is a base class containing handlers for the `Invoke()` and `Init()` function which are required
@@ -17,10 +17,12 @@ import { ConveyorItem } from './ConveyorItem';
  */
 export class SmartConveyorChaincode implements ChaincodeInterface {
 
-    public logger: LoggerInstance;
+    public logger: any;
 
     constructor(logLevel?: string) {
-        this.logger = Helpers.getLoggerInstance(this.name, logLevel);
+        this.logger = shim.newLogger('SmartConveyorChaincode');
+        this.logger.level = logLevel || 'debug';
+        // this.logger = Helpers.getLoggerInstance(this.name, logLevel);
     }
 
     /**
@@ -63,16 +65,15 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         /* Init method initializes a List of Bay (allBays) and a List of Type (allTypes)  */
 
         /* INIT 2 bays initial (with precerence null) */
-        let bayOne = new ConveyorBay('1', 10, 0, true, 1);
-        let keyBayOne = await this.generateKey(stub, 'BAY', bayOne.id);
-        let bayTwo = new ConveyorBay('2', 20, 0, true, 2);
-        let keyBayTwo = await this.generateKey(stub, 'BAY', bayTwo.id);
+        let bayOne = new ConveyorBay('1', 10, 5, true, 1, new Date());
+        let bayTwo = new ConveyorBay('2', 20, 0, true, 2, new Date());
+        let bayThree = new ConveyorBay('3', 30, 0, true, 3, new Date());
         try {
-            await this.generateKey(stub, 'BAY', bayOne.id);
-            await stub.putState(keyBayOne, Buffer.from(JSON.stringify(bayOne)));
-            await stub.putState(keyBayTwo, Buffer.from(JSON.stringify(bayTwo)));
+            await this.doEditConveyorBay(stub,bayOne);
+            await this.doEditConveyorBay(stub,bayTwo);
+            await this.doEditConveyorBay(stub,bayThree);
         } catch (e) {
-            this.logger.info(`INIT - ERROR: Something wrong in putState of bays ` + e);
+            this.logger.info(`INIT - ERROR: Something wrong in put State of bays ` + e);
             return shim.error(e);
         }
 
@@ -81,16 +82,16 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         let typeFridge = new ConveyorItemType('2', 'Fridge');
         let typeWashingMachine = new ConveyorItemType('3', 'WashingMachine');
         let typeDishwasher = new ConveyorItemType('4', 'Dishwasher');
-        let typedryer = new ConveyorItemType('5', 'Dryer');
+        let typeDryer = new ConveyorItemType('5', 'Dryer');
 
         try {
             await stub.putState(typeOven.id, Buffer.from(JSON.stringify(typeOven)));
             await stub.putState(typeFridge.id, Buffer.from(JSON.stringify(typeFridge)));
             await stub.putState(typeWashingMachine.id, Buffer.from(JSON.stringify(typeWashingMachine)));
             await stub.putState(typeDishwasher.id, Buffer.from(JSON.stringify(typeDishwasher)));
-            await stub.putState(typedryer.id, Buffer.from(JSON.stringify(typedryer)));
+            await stub.putState(typeDryer.id, Buffer.from(JSON.stringify(typeDryer)));
         } catch (e) {
-            this.logger.info(`INIT - ERROR: Something wrong in putState of types ` + e);
+            this.logger.info(`INIT - ERROR: Something wrong in put State of types ` + e);
             return shim.error(e);
         }
 
@@ -98,13 +99,20 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         try {
             bayOne.addPreference(typeOven);
             bayOne.addPreference(typeFridge);
-            await stub.putState(keyBayOne, Buffer.from(JSON.stringify(bayOne)));
-            await stub.putState(await this.generateKey(stub, 'BAY', bayOne.id), Buffer.from(JSON.stringify(bayOne)));
+            this.doEditConveyorBay(stub,bayOne);
+            // await stub.put State(keyBayOne, Buffer.from(JSON.stringify(bayOne)));
 
             bayTwo.addPreference(typeWashingMachine);
             bayTwo.addPreference(typeDishwasher);
-            bayTwo.addPreference(typedryer);
-            await stub.putState(keyBayTwo, Buffer.from(JSON.stringify(bayTwo)));
+            bayTwo.addPreference(typeDryer);
+            this.doEditConveyorBay(stub,bayTwo);
+
+            bayThree.addPreference(typeWashingMachine);
+            bayThree.addPreference(typeDishwasher);
+            bayThree.addPreference(typeDryer);
+            bayThree.addPreference(typeOven);
+            bayThree.addPreference(typeFridge);
+            this.doEditConveyorBay(stub,bayThree);
         } catch (e) {
             this.logger.info(`INIT - ERROR: Something wrong in addPreference of bay ` + e);
             return shim.error(e);
@@ -189,7 +197,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             this.logger.error(stacktrace);
             this.logger.error(`Data of error ${err.message}: ${JSON.stringify(err.data)}`);
 
-            return shim.error(error.serialized);
+            return shim.error(error.serialized); 
         }
     }
 
@@ -205,15 +213,18 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         // logger.info('########### controlBays ###########');
         let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
         let bays = await Transform.iteratorToObjectList(iterator);
-        let displayDate = new Date();
-        displayDate.setSeconds((displayDate.getSeconds() - 15));
+        let displayDate: Date = new Date();
+        let mill = displayDate.getTime();
+        mill = mill -15000;
+        // let num = displayDate.setSeconds(displayDate.getSeconds() - 15);
 
         for (let bay of bays) {
             let baia = bay as ConveyorBay;
-            if (baia.datetime < displayDate) {
+            let bayDate = new Date (baia.datetime).getTime();
+            if (bayDate < mill) {
                 this.logger.info('ConveyorBay with id: ' + baia.id + 'switched OFF due to inactivity ');
-                baia.enable = false;
-                this.editConveyorBay(stub, baia);
+                baia.enable = false; 
+                this.doEditConveyorBay(stub, baia);
 
                 let items = new Array<ConveyorItem>();
                 items = await this.getItemsByBay(stub, baia.id);
@@ -243,7 +254,8 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             let baia = bay as ConveyorBay;
             if (baia.enable) {
                 if (baia.capacity > baia.load) {
-                    if (baia.preference.includes(item.type)) {
+                   //if (baia.preference.includes(item.type)) {
+                       if(baia.preference.find(x => x.id === item.type.id)){
                         baysCompatible.push(baia);
                     } else {
                         baysAvailable.push(baia);
@@ -267,29 +279,12 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
                 baySelected = baysAvailable[0];
             } else {
-                this.logger.info(`storeConveyorItem - ERROR: NO Bays available for Item` + item.id);
-                return shim.error(`storeConveyorItem - ERROR: NO Bays available for Item` + item.id);
+                this.logger.info(`assignBayToItem - ERROR: NO Bays available for Item` + item.id);
+                return shim.error(`assignBayToItem - ERROR: NO Bays available for Item` + item.id);
             }
         }
-        // NEW EVENT
-        baySelected.load++;
         item.conveyorBay = baySelected;
-        item.state = ConveyorItem.State.InConveyorBelt;
-        try {
-            let keyItem = await this.generateKey(stub, 'ITEM', item.id);
-            stub.putState(keyItem, Buffer.from(JSON.stringify(item)));
-        } catch (e) {
-            this.logger.info(`storeConveyorItem - ERROR: Something wrong in putState of item ` + e);
-            return shim.error(e);
-        }
-
-        try {
-            let keyBay = await this.generateKey(stub, 'BAY', baySelected.id);
-            stub.putState(keyBay, Buffer.from(JSON.stringify(baySelected)));
-        } catch (e) {
-            this.logger.info(`storeConveyorItem - ERROR: Something wrong in putState of bay ` + e);
-            return shim.error(e);
-        }
+        return this.doConveyorItemAssignTo(stub,item, ConveyorItem.State.InConveyorBelt);
     }
 
     private async OrderByArray(values: any[], orderType: any) {
@@ -314,11 +309,12 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      *
      * @param stub
      */
-    private async storeConveyorItem(stub: Stub, item: ConveyorItem) {
+    private async storeConveyorItem(stub: Stub, itemStr: string) {
         // logger.info('########### storeConveyorItem ###########');
-        if (item == null) {
+        if (!itemStr) {
             return shim.error(`storeConveyorItem - ERROR: NO Item in Input`);
         }
+        const item : ConveyorItem = JSON.parse(itemStr);
         /* Control all bays on - off */
         await this.controlBays(stub);
         await this.assignBayToItem(stub, item);
@@ -326,29 +322,46 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         return shim.success();
     }
 
+
     /* methods POST */
-    /* editConveyorBay() */
+    /* doEditConveyorBay() */
     /* The editeConveyorBay method is called to update a Bay */
     /**
      * Handle custom method execution
      *
      * @param stub
      */
-    private async editConveyorBay(stub: Stub, bay: ConveyorBay) {
-        // logger.info('########### editConveyorbay ###########');
-        if (bay == null) {
+    private async editConveyorBay(stub: Stub, bay: string) {
+        // logger.info('########### editConveyorBay ###########');
+        if (!bay) {
             return shim.error(`editConveyorBay - ERROR: NO Bay in Input`);
+        }
+        try {
+            return this.doEditConveyorBay(stub, JSON.parse(bay));
+        } catch (e) {
+            this.logger.info(`editConveyorBay - ERROR: Something wrong in put State of bay ` + e);
+            return shim.error(e);
+        }
+        
+    }
+
+    
+    private async doEditConveyorBay(stub: Stub, bay: ConveyorBay) {
+        // logger.info('########### doEditConveyorBay ###########');
+        if (bay == null) {
+            return shim.error(`doEditConveyorBay - ERROR: NO Bay in Input`);
         }
 
         try {
-            let keyBay = await this.generateKey(stub, 'ITEM', bay.id);
+            let keyBay = await this.generateKey(stub, 'BAY', bay.id);
             await stub.putState(keyBay, Buffer.from(JSON.stringify(bay)));
             return shim.success();
         } catch (e) {
-            this.logger.info(`editConveyorbay - ERROR: Something wrong in putState of bay ` + e);
+            this.logger.info(`doEditConveyorBay - ERROR: Something wrong in put State of bay ` + e);
             return shim.error(e);
         }
     }
+
 
     /* methods POST */
     /* conveyorItemIntoConveyorBay() */
@@ -359,31 +372,44 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      *
      * @param stub
      */
-    private async conveyorItemIntoConveyorBay(stub: Stub, item: ConveyorItem) {
+    private async conveyorItemIntoConveyorBay(stub: Stub, item: ConveyorItem, state: ConveyorItem.State) {
+    
+    return this.doConveyorItemAssignTo(stub,item,ConveyorItem.State.InBay);
+
+    }
+
+
+
+
+    private async doConveyorItemAssignTo(stub: Stub, item: ConveyorItem, state: ConveyorItem.State) {
         // logger.info('########### assignementConveyorItemToConveyorBay ###########');
 
         /* Control all bays on - off */
         await this.controlBays(stub);
 
-        // NEW EVENT
-        item.conveyorBay.load--;
-        item.state = ConveyorItem.State.InBay;
+        
+        await item.conveyorBay.load++;
+        item.state = state;
+       
         try {
             let keyItem = await this.generateKey(stub, 'ITEM', item.id);
             stub.putState(keyItem, Buffer.from(JSON.stringify(item)));
         } catch (e) {
-            this.logger.info(`conveyorItemIntoConveyorBay - ERROR: Something wrong in putState of item ` + e);
+            this.logger.info(`conveyorItemIntoConveyorBay - ERROR: Something wrong in put State of item ` + e);
             return shim.error(e);
         }
 
         try {
-            let keyBay = await this.generateKey(stub, 'BAY', item.conveyorBay.id);
             let bay = item.conveyorBay;
-            stub.putState(keyBay, Buffer.from(JSON.stringify(bay)));
+            return this.doEditConveyorBay(stub,bay);
         } catch (e) {
-            this.logger.info(`conveyorItemIntoConveyorBay - ERROR: Something wrong in putState of bay ` + e);
+            this.logger.info(`conveyorItemIntoConveyorBay - ERROR: Something wrong in put State of bay ` + e);
             return shim.error(e);
         }
+        // NEW EVENT
+        const event: EventPayload = this.createEvent(item.id, JSON.stringify(item.type), item.conveyorBay.id,  item.conveyorBay.capacity,  item.conveyorBay.load );
+        stub.setEvent("EVENT",Buffer.from(JSON.stringify(event)));
+
     }
 
     /* methods POST */
@@ -408,9 +434,13 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
                 await stub.putState(keyItem, Buffer.from(JSON.stringify(item)));
                 return shim.success();
             } catch (e) {
-                this.logger.info(`conveyorItemOutConveyorBay - ERROR: Something wrong in putState of item ` + e);
+                this.logger.info(`conveyorItemOutConveyorBay - ERROR: Something wrong in put State of item ` + e);
                 return shim.error(e);
             }
+            // NEW EVENT
+            const event: EventPayload = this.createEvent(item.id, JSON.stringify(item.type), item.conveyorBay.id,  item.conveyorBay.capacity,  item.conveyorBay.load );
+            stub.setEvent("EVENT",Buffer.from(JSON.stringify(event)));
+
         }
     }
 
@@ -444,6 +474,20 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
     private async  generateKey(stub: Stub, type: string, id: string) {
         // logger.info('########### generateKey ###########');
         return stub.createCompositeKey(type, [id]);
+
+    }
+
+    private createEvent(serialNumberItem: string, itemType: string, bayId: string, bayCapacity : number, bayLoad: number){
+        // logger.info('########### createEvent ###########');
+        let event = {
+            serialNumberItem: serialNumberItem,
+            itemType: itemType,
+            bayId: bayId,
+            bayCapacity: bayCapacity,
+            bayLoad: bayLoad
+        }
+
+        return event;
 
     }
 }
