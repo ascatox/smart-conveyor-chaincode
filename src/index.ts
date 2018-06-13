@@ -4,7 +4,6 @@ import { ChaincodeError } from './ChaincodeError';
 import { Transform } from './utils/datatransform';
 import { Helpers } from './utils/helpers';
 import { ConveyorItemType } from './ConveyorItemType';
-import shim = require('fabric-shim');
 
 export {
     SmartConveyorChaincode,
@@ -20,4 +19,3 @@ export interface KV {
     value: any;
 }
 
-shim.start(new SmartConveyorChaincode('debug'));
