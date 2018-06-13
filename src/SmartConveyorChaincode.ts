@@ -1,7 +1,5 @@
 import shim = require('fabric-shim');
 import { ChaincodeInterface, ChaincodeReponse, Stub } from 'fabric-shim';
-import { Helpers } from './utils/helpers';
-import { LoggerInstance } from 'winston';
 import { ERRORS } from './constants/errors';
 import { ChaincodeError } from './ChaincodeError';
 import { StubHelper } from './StubHelper';
@@ -17,10 +15,12 @@ import { ConveyorItem } from './ConveyorItem';
  */
 export class SmartConveyorChaincode implements ChaincodeInterface {
 
-    public logger: LoggerInstance;
+    public logger: any;
 
     constructor(logLevel?: string) {
-        this.logger = Helpers.getLoggerInstance(this.name, logLevel);
+        this.logger = shim.newLogger('SmartConveyorChaincode');
+        this.logger.level = logLevel || 'debug';
+        //Helpers.getLoggerInstance(this.name, logLevel);
     }
 
     /**
@@ -213,7 +213,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             if (baia.datetime < displayDate) {
                 this.logger.info('ConveyorBay with id: ' + baia.id + 'switched OFF due to inactivity ');
                 baia.enable = false;
-                this.editConveyorBay(stub, baia);
+                this.editConveyorBay(stub, JSON.stringify(baia));
 
                 let items = new Array<ConveyorItem>();
                 items = await this.getItemsByBay(stub, baia.id);
@@ -238,7 +238,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         let bays = await Transform.iteratorToObjectList(iterator);
         let baysCompatible = Array<ConveyorBay>();
         let baysAvailable = Array<ConveyorBay>();
-
         for (let bay of bays) {
             let baia = bay as ConveyorBay;
             if (baia.enable) {
@@ -314,13 +313,14 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      *
      * @param stub
      */
-    private async storeConveyorItem(stub: Stub, item: ConveyorItem) {
+    private async storeConveyorItem(stub: Stub, itemStr: string) {
         // logger.info('########### storeConveyorItem ###########');
-        if (item == null) {
+        if (!itemStr) {
             return shim.error(`storeConveyorItem - ERROR: NO Item in Input`);
         }
         /* Control all bays on - off */
         await this.controlBays(stub);
+        const item: ConveyorItem = JSON.parse(itemStr);
         await this.assignBayToItem(stub, item);
 
         return shim.success();
@@ -334,13 +334,14 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      *
      * @param stub
      */
-    private async editConveyorBay(stub: Stub, bay: ConveyorBay) {
+    private async editConveyorBay(stub: Stub, bayStr: string) {
         // logger.info('########### editConveyorbay ###########');
-        if (bay == null) {
+        if (!bayStr) {
             return shim.error(`editConveyorBay - ERROR: NO Bay in Input`);
         }
 
         try {
+            const bay: ConveyorBay = JSON.parse(bayStr);
             let keyBay = await this.generateKey(stub, 'ITEM', bay.id);
             await stub.putState(keyBay, Buffer.from(JSON.stringify(bay)));
             return shim.success();
