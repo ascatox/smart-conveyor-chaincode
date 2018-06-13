@@ -3,7 +3,7 @@
 import { ChaincodeMockStub } from '@theledger/fabric-mock-stub';
 import { ChaincodeReponse } from 'fabric-shim';
 import { Transform } from '../src/utils/datatransform';
-
+import * as mocha from 'mocha';
 import { expect } from 'chai';
 import { SmartConveyorChaincode } from '../src';
 import { ConveyorItem } from '../src/ConveyorItem';
