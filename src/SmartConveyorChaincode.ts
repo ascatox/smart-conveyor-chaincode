@@ -66,11 +66,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
 
         /* INIT 5 types initial (Oven, Fridge, WashingMachine, Dishwasher, Dryer) */
-        let typeOven = new ConveyorItemType('1', 'Oven');
-        let typeFridge = new ConveyorItemType('2', 'Fridge');
-        let typeWashingMachine = new ConveyorItemType('3', 'WashingMachine');
-        let typeDishwasher = new ConveyorItemType('4', 'Dishwasher');
-        let typeDryer = new ConveyorItemType('5', 'Dryer');
+        let typeOven = new ConveyorItemType('869990965260', 'oven');
+        let typeFridge = new ConveyorItemType('869990965261', 'fridge');
+        let typeWashingMachine = new ConveyorItemType('869990965262', 'washingmachine');
+        let typeDishwasher = new ConveyorItemType('869990965263', 'dishwasher');
+        let typeDryer = new ConveyorItemType('869990965264', 'dryer');
 
         try {
             await stub.putState(typeOven.id, Buffer.from(JSON.stringify(typeOven)));
@@ -83,7 +83,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             return shim.error(e);
         }
 
-        /* INIT 3 bays initial (with precerence null) */
+        /* INIT 10 bays initial (with precerence) */
         let bayOne = new ConveyorBay('1', 10, 5, true, 1, new Date());
         bayOne.addPreference(typeOven);
         bayOne.addPreference(typeFridge);
@@ -99,10 +99,59 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         bayThree.addPreference(typeDryer);
         bayThree.addPreference(typeOven);
         bayThree.addPreference(typeFridge);
+
+        let bayFor = new ConveyorBay('4', 40, 0, true, 4, new Date());
+        bayThree.addPreference(typeWashingMachine);
+        bayThree.addPreference(typeDryer);
+        bayThree.addPreference(typeFridge);
+
+        let bayFive = new ConveyorBay('5', 50, 0, true, 5, new Date());
+        bayThree.addPreference(typeDishwasher);
+        bayThree.addPreference(typeDryer);
+        bayThree.addPreference(typeOven);
+        
+        let baySix = new ConveyorBay('6', 60, 0, true, 6, new Date());
+        bayThree.addPreference(typeWashingMachine);
+        bayThree.addPreference(typeFridge);
+
+        let baySeven = new ConveyorBay('7', 70, 0, true, 7, new Date());
+        bayThree.addPreference(typeWashingMachine);
+        bayThree.addPreference(typeDishwasher);
+        bayThree.addPreference(typeDryer);
+        bayThree.addPreference(typeOven);
+        bayThree.addPreference(typeFridge);
+
+        let bayEight = new ConveyorBay('8', 80, 0, true, 8, new Date());
+        bayThree.addPreference(typeWashingMachine);
+        bayThree.addPreference(typeDishwasher);
+        bayThree.addPreference(typeDryer);
+        bayThree.addPreference(typeOven);
+        bayThree.addPreference(typeFridge);
+
+        let bayNine = new ConveyorBay('9', 90, 0, true, 9, new Date());
+        bayThree.addPreference(typeWashingMachine);
+        bayThree.addPreference(typeDishwasher);
+        bayThree.addPreference(typeDryer);
+        bayThree.addPreference(typeOven);
+        bayThree.addPreference(typeFridge);
+        
+        let bayTen = new ConveyorBay('10', 99, 0, true, 10, new Date());
+        bayThree.addPreference(typeWashingMachine);
+        bayThree.addPreference(typeDishwasher);
+        bayThree.addPreference(typeDryer);
+        bayThree.addPreference(typeOven);
+        bayThree.addPreference(typeFridge);
         try {
             await this.doEditConveyorBay(stub, bayOne);
             await this.doEditConveyorBay(stub, bayTwo);
             await this.doEditConveyorBay(stub, bayThree);
+            await this.doEditConveyorBay(stub, bayFor);
+            await this.doEditConveyorBay(stub, bayFive);
+            await this.doEditConveyorBay(stub, baySix);
+            await this.doEditConveyorBay(stub, baySeven);
+            await this.doEditConveyorBay(stub, bayEight);
+            await this.doEditConveyorBay(stub, bayNine);
+            await this.doEditConveyorBay(stub, bayTen);
         } catch (e) {
             this.logger.error(`INIT - ERROR: Something wrong in addPreference of bay ` + e);
             return shim.error(e);
@@ -200,7 +249,10 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      * @param stub
      */
     private async controlBays(stub: Stub) {
-        this.logger.info('########### controlBays ###########');
+        this.logger.info('################ ATTENTION #########################');
+        this.logger.info('########### controlBays  NOT IN FUNCTION ###########');
+        this.logger.info('####################################################');
+        /*
         let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
         let bays = await Transform.iteratorToObjectList(iterator);
         let displayDate: Date = new Date();
@@ -213,7 +265,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             // this.logger.info('CONTROL ConveyorBay with id: ' + baia.id);
             let bayDate = new Date(baia.datetime).getTime();
             if (bayDate < mill) {
-                this.logger.info('ConveyorBay with id: ' + baia.id + 'switched OFF due to inactivity ');
+                this.logger.info('ConveyorBay with id: ' + baia.id + ' switched OFF due to inactivity ');
                 baia.enable = false;
                 this.doEditConveyorBay(stub, baia);
 
@@ -224,7 +276,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
                 }
             }
         }
+        
         return shim.success();
+
+        */
+        
     }
 
     /* methods POST */
@@ -246,12 +302,17 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             if (baia.enable) {
                 if (baia.capacity > baia.load) {
                     //if (baia.preference.includes(item.type)) {
-                    if (baia.preference.find(x => x.id === item.type.id)) {
-                        baysCompatible.push(baia);
-                    } else {
+                    let isFound : boolean = false;    
+                    for(let pref of baia.preference) {
+                        if (pref.id === item.type.id) {
+                            baysCompatible.push(baia);
+                            isFound = true;
+                            break;
+                        }
+                    } 
+                    if (!isFound) {
                         baysAvailable.push(baia);
                     }
-
                 }
             }
         }
@@ -345,7 +406,8 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
         try {
             let keyBay = await this.generateKey(stub, 'BAY', bay.id);
-            await stub.putState(keyBay, Buffer.from(JSON.stringify(bay)));
+            return await stub.putState(keyBay, Buffer.from(JSON.stringify(bay)));
+            
             // return shim.success();
         } catch (e) {
             this.logger.error(`doEditConveyorBay - ERROR: Something wrong in put State of bay ` + e);
@@ -366,12 +428,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      * @param stub
      */
     private async conveyorItemIntoConveyorBay(stub: Stub, item: ConveyorItem) {
-
+        
+       
         return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.InBay);
 
     }
-
-
 
 
     private async doConveyorItemAssignTo(stub: Stub, item: ConveyorItem, state: ConveyorItem.State) {
@@ -380,15 +441,20 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         /* Control all bays on - off */
         await this.controlBays(stub);
 
-
-        item.conveyorBay.load++;
+        if (state == ConveyorItem.State.InBay) {
+            item.conveyorBay.load++;
+        }
+        if (state == ConveyorItem.State.Released) {
+            item.conveyorBay.load--;
+        }
+        
         item.state = state;
 
         try {
             let keyItem = await this.generateKey(stub, 'ITEM', item.id);
             stub.putState(keyItem, Buffer.from(JSON.stringify(item)));
         } catch (e) {
-            this.logger.error(`conveyorItemIntoConveyorBay - ERROR: Something wrong in put State of item ` + e);
+            this.logger.error(`doConveyorItemAssignTo - ERROR: Something wrong in put State of item ` + e);
             return shim.error(e);
         }
 
@@ -396,7 +462,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             let bay = item.conveyorBay;
             this.doEditConveyorBay(stub, bay);
         } catch (e) {
-            this.logger.error(`conveyorItemIntoConveyorBay - ERROR: Something wrong in put State of bay ` + e);
+            this.logger.error(`doConveyorItemAssignTo - ERROR: Something wrong in put State of bay ` + e);
             return shim.error(e);
         }
         // NEW EVENT
@@ -415,26 +481,9 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      * @param stub
      */
     private async conveyorItemOutConveyorBay(stub: Stub, item: ConveyorItem) {
-        this.logger.info('########### assignementConveyorItemToConveyorBay ###########');
+        this.logger.info('########### conveyorItemOutConveyorBay ###########');
 
-        /* Control all bays on - off */
-        await this.controlBays(stub);
-
-        if (item) {
-            try {
-                item.state = ConveyorItem.State.Released;
-                let keyItem = await this.generateKey(stub, 'ITEM', item.id);
-                await stub.putState(keyItem, Buffer.from(JSON.stringify(item)));
-                return shim.success();
-            } catch (e) {
-                this.logger.error(`conveyorItemOutConveyorBay - ERROR: Something wrong in put State of item ` + e);
-                return shim.error(e);
-            }
-            // NEW EVENT
-            const event: EventPayload = this.createEvent(item.id, JSON.stringify(item.type), item.conveyorBay.id, item.conveyorBay.capacity, item.conveyorBay.load);
-            stub.setEvent("EVENT", Buffer.from(JSON.stringify(event)));
-
-        }
+        return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.Released);
     }
 
     /* methods GET */
@@ -463,6 +512,24 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         }
         return itemsAssigned;
     }
+
+    /* methods GET */
+    /* getBays() */
+    /* The getBays method is called to GET all Bays */
+    /**
+     * Handle custom method execution
+     *
+     * @param stub
+     */
+    private async getBays(stub: Stub) {
+        this.logger.info('########### getBays ###########');
+        
+        let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
+        let bays = await Transform.iteratorToObjectList(iterator);
+
+        return bays;
+    }
+
 
     private async  generateKey(stub: Stub, type: string, id: string) {
         this.logger.info('########### generateKey ###########');

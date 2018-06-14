@@ -43,8 +43,8 @@ describe('Test Mockstub', () => {
             typeObject: 'ITEM',
             id: '7784199',
             type: {
-                id: '1',
-                description: 'Oven'
+                id: '869990965260',
+                description: 'oven'
             },
             conveyorBay: null,
             state: null
@@ -60,6 +60,16 @@ describe('Test Mockstub', () => {
         const bay: ConveyorBay = new ConveyorBay('1', 10, 0, true, 1, new Date());
       
         const response: ChaincodeReponse = await stub.mockInvoke('test', ['editConveyorBay', JSON.stringify(bay)]);
+        expect(response.status).to.deep.equal(200);
+    });
+    it('Should be able to get all bays', async () => {
+        const stub = new ChaincodeMockStub('mock', chaincode);
+        const args = ['arg1', 'arg2'];
+        await stub.mockInit('test', args);
+
+        // const bay: ConveyorBay = new ConveyorBay('1', 10, 0, true, 1, new Date());
+      
+        const response: ChaincodeReponse = await stub.mockInvoke('test', ['getBays']);
         expect(response.status).to.deep.equal(200);
     });
 });
