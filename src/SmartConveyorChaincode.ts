@@ -471,8 +471,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             return shim.error(e);
         }
         // NEW EVENT @FIXME: Understand if use await keyword @SEE Massi
-        const event: EventPayload = this.createEvent(item.id, JSON.stringify(item.type), item.conveyorBay.id,
-         item.conveyorBay.capacity, item.conveyorBay.load);
+        const event: EventPayload = this.createEvent(item);
         stub.setEvent('EVENT', Buffer.from(JSON.stringify(event)));
 
     }
@@ -543,14 +542,14 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
     }
 
-    private createEvent(serialNumberItem: string, itemType: string, bayId: string, bayCapacity: number, bayLoad: number) {
+    private createEvent(item: ConveyorItem) {
         this.logger.info('########### createEvent ###########');
         let event = {
-            serialNumberItem: serialNumberItem,
-            itemType: itemType,
-            bayId: bayId,
-            bayCapacity: bayCapacity,
-            bayLoad: bayLoad
+            serialNumberItem: item.id,
+            itemType: JSON.stringify(item.type),
+            bayId: item.conveyorBay.id,
+            bayCapacity: item.conveyorBay.capacity,
+            bayLoad: item.conveyorBay.load
         };
         return event;
 
