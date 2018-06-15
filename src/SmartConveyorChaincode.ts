@@ -337,7 +337,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             }
         }
         item.conveyorBay = baySelected;
-        return this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.InConveyorBelt);
+        return this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);
     }
 
     private async OrderByArray(values: any[], orderType: any) {
@@ -435,21 +435,21 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
     private async conveyorItemIntoConveyorBay(stub: Stub, item: ConveyorItem) {
 
 
-        return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.InBay);
+        return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBay);
 
     }
 
 
     private async doConveyorItemAssignTo(stub: Stub, item: ConveyorItem, state: ConveyorItem.State) {
-        this.logger.info('########### assignementConveyorItemToConveyorBay ###########');
+        this.logger.info('########### doConveyorItemAssignTo ###########');
 
         /* Control all bays on - off */
         await this.controlBays(stub);
 
-        if (state == ConveyorItem.State.InBay) {
+        if (state == ConveyorItem.State.inBay) {
             item.conveyorBay.load++;
         }
-        if (state == ConveyorItem.State.Released) {
+        if (state == ConveyorItem.State.released) {
             item.conveyorBay.load--;
         }
 
@@ -488,7 +488,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
     private async conveyorItemOutConveyorBay(stub: Stub, item: ConveyorItem) {
         this.logger.info('########### conveyorItemOutConveyorBay ###########');
 
-        return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.Released);
+        return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.released);
     }
 
     /* methods GET */
@@ -511,7 +511,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
         for (let item of items) {
             let elemItem = item as ConveyorItem;
-            if (elemItem.conveyorBay.id == bayId && elemItem.state == ConveyorItem.State.InConveyorBelt) {
+            if (elemItem.conveyorBay.id == bayId && elemItem.state == ConveyorItem.State.inBelt) {
                 itemsAssigned.push(elemItem);
             }
         }
@@ -547,6 +547,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         let event = {
             serialNumberItem: item.id,
             itemType: JSON.stringify(item.type),
+            state: item.state,
             bayId: item.conveyorBay.id,
             bayCapacity: item.conveyorBay.capacity,
             bayLoad: item.conveyorBay.load
@@ -554,4 +555,49 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         return event;
 
     }
+
+    private async getItemsById(stub: Stub, id: string) {
+        this.logger.info("########### getItemsById ###########");
+        if (id == null || id == "") {
+            this.logger.error("getItemsById ERROR: id is empty or null!");
+            return null;
+        }
+        try {
+            let item = await stub.getState(id);
+            return item;
+        } catch (e) {
+            this.logger.error(
+                "getItemsById ERROR: Item not found with this id: " + id
+            );
+            return shim.error(e);
+        }
+    }
+
+    private async getItemsByDescription(stub: Stub, desc: string) {
+        let arrayItem = Array<ConveyorItem>();
+        this.logger.info("########### getItemsByDescription ###########");
+        if (desc == null || desc == "") {
+            this.logger.error(
+                "getItemsByDescription ERROR: desc is empty or null!"
+            );
+            return null;
+        }
+        try {
+            let iterator = await stub.getStateByPartialCompositeKey("ITEM", []);
+            let items = await Transform.iteratorToObjectList(iterator);
+            for (let item of items) {
+                let conveyorItem = item as ConveyorItem;
+                if (conveyorItem.type.description == desc)
+                    arrayItem.push(conveyorItem);
+            }
+            return arrayItem;
+        } catch (e) {
+            this.logger.error(
+                "getItemsByDescription ERROR: Item not found with this desc: " +
+                    desc
+            );
+            return shim.error(e);
+        }
+    }
+
 }
