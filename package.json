@@ -2,9 +2,10 @@
     "name": "smart-conveyor-chaincode",
     "version": "0.0.1",
     "description": "",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/src/start.js",
+    "types": "dist/src/start.d.ts",
     "scripts": {
+        "start": "node ./dist/src/start.js",
         "build": "npm run clean && tsc",
         "lint": "tslint --fix -c tslint.json './src/**/*.ts'",
         "clean": "rimraf dist",
@@ -46,7 +47,8 @@
         "google-protobuf": "^3.5.0",
         "lodash": "^4.17.5",
         "winston": "^2.4.0",
-        "yup": "^0.24.1"
+        "yup": "^0.24.1",
+        "moment":"*"
     },
     "publishConfig": {
         "registry": "https://registry.npmjs.org",

@@ -10,7 +10,7 @@ export class ConveyorBay {
     public position    : number;
     public datetime    : Date;
 
-    constructor(id: string, capacity:number, load:number, enable:boolean, position:number) {
+    constructor(id: string, capacity:number, load:number, enable:boolean, position:number, date:Date) {
         this.typeObject = 'BAY';
         this.id = id;
         this.capacity = capacity;
@@ -18,7 +18,7 @@ export class ConveyorBay {
         this.preference = new Array<ConveyorItemType>();
         this.enable = enable;
         this.position = position;
-        this.datetime = new Date();
+        this.datetime = date;
     }
 
     addPreference(conveyorItemType:ConveyorItemType) {
