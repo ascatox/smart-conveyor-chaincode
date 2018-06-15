@@ -303,7 +303,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             if (baia.enable) {
                 if (baia.capacity > baia.load) {
                     //if (baia.preference.includes(item.type)) {
-                    let isFound: boolean = false;
+                    let isFound = false;
                     for (let pref of baia.preference) {
                         if (pref.id === item.type.id) {
                             baysCompatible.push(baia);
