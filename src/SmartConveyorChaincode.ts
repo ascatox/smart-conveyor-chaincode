@@ -84,6 +84,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         }
 
         /* INIT 10 bays initial (with precerence) */
+        // @FIXME Use Loop for repetitive tasks
         let bayOne = new ConveyorBay('1', 10, 5, true, 1, new Date());
         bayOne.addPreference(typeOven);
         bayOne.addPreference(typeFridge);
@@ -156,7 +157,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             this.logger.error(`INIT - ERROR: Something wrong in addPreference of bay ` + e);
             return shim.error(e);
         }
-
+         // @FIXME Use Loop for repetitive tasks
         return await this.executeMethod('init', args, stub, true);
     }
 
@@ -371,7 +372,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         try {
             await this.controlBays(stub);
             await this.assignBayToItem(stub, item);
-
             return shim.success();
         } catch (err) {
             return shim.error('storeConveyorItem - ERROR: ' + err);
@@ -416,7 +416,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             // return shim.success();
         } catch (e) {
             this.logger.error(`doEditConveyorBay - ERROR: Something wrong in put State of bay ` + e);
-            this.logger.error(`doEditConveyorBay - BAY id:` + bay.id);
+            this.logger.error(`doEditConveyorBay - BAY id: ${bay.id}`);
             throw new Error(e);
             // return shim.error(e);
         }
@@ -471,8 +471,9 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             return shim.error(e);
         }
         // NEW EVENT @FIXME: Understand if use await keyword @SEE Massi
-        const event: EventPayload = this.createEvent(item.id, JSON.stringify(item.type), item.conveyorBay.id, item.conveyorBay.capacity, item.conveyorBay.load);
-        stub.setEvent("EVENT", Buffer.from(JSON.stringify(event)));
+        const event: EventPayload = this.createEvent(item.id, JSON.stringify(item.type), item.conveyorBay.id,
+         item.conveyorBay.capacity, item.conveyorBay.load);
+        stub.setEvent('EVENT', Buffer.from(JSON.stringify(event)));
 
     }
 
@@ -550,8 +551,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             bayId: bayId,
             bayCapacity: bayCapacity,
             bayLoad: bayLoad
-        }
-
+        };
         return event;
 
     }
