@@ -38,10 +38,14 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         if (!itemStr) {
             throw new Error(`storeConveyorItem - ERROR: NO Item in Input`);
         }
-        const item: ConveyorItem = JSON.parse(itemStr);
-        /* Control all bays on - off */
-        await this.controlBays(stub);
-        await this.assignBayToItem(stub, item);
+        try {
+            const item: ConveyorItem = JSON.parse(itemStr);
+            /* Control all bays on - off */
+            await this.controlBays(stub);
+            await this.assignBayToItem(stub, item);
+        } catch (err) {
+            throw new Error(err);
+        }
     }
 
     /* methods POST */
@@ -57,7 +61,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         if (!bay) {
             throw new Error(`editConveyorBay - ERROR: NO Bay in Input`);
         }
-        await this.doEditConveyorBay(stub, JSON.parse(bay));
+        try {
+            await this.doEditConveyorBay(stub, JSON.parse(bay));
+        } catch (err) {
+            throw new Error(err);
+        }
     }
 
     /* methods POST */
@@ -74,7 +82,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         if (!itemStr) {
             throw new Error('conveyorItemIntoConveyorBay - ERROR No input Item');
         }
-        await this.doConveyorItemAssignTo(stub, JSON.parse(itemStr), ConveyorItem.State.inBay);
+        try {
+            await this.doConveyorItemAssignTo(stub, JSON.parse(itemStr), ConveyorItem.State.inBay);
+        } catch (err) {
+            throw new Error(err);
+        }
     }
 
 
@@ -92,7 +104,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         if (!itemStr) {
             throw new Error('conveyorItemOutConveyorBay - ERROR No  input Item');
         }
-        await this.doConveyorItemAssignTo(stub, JSON.parse(itemStr), ConveyorItem.State.released);
+        try {
+            await this.doConveyorItemAssignTo(stub, JSON.parse(itemStr), ConveyorItem.State.released);
+        } catch (err) {
+            throw new Error(err);
+        }
     }
 
     /* methods GET */
@@ -109,16 +125,20 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         if (bayId == null || bayId == '') {
             throw new Error('getItemsByBay - ERROR No  input Bay');
         }
-        let iterator = await stub.getStateByPartialCompositeKey('ITEM', []);
-        let items = await Transform.iteratorToObjectList(iterator);
+        try {
+            let iterator = await stub.getStateByPartialCompositeKey('ITEM', []);
+            let items = await Transform.iteratorToObjectList(iterator);
 
-        for (let item of items) {
-            let elemItem = item as ConveyorItem;
-            if (elemItem.conveyorBay.id == bayId && elemItem.state == ConveyorItem.State.inBelt) {
-                itemsAssigned.push(elemItem);
+            for (let item of items) {
+                let elemItem = item as ConveyorItem;
+                if (elemItem.conveyorBay.id == bayId && elemItem.state == ConveyorItem.State.inBelt) {
+                    itemsAssigned.push(elemItem);
+                }
             }
+            return itemsAssigned;
+        } catch (err) {
+            throw new Error(err);
         }
-        return itemsAssigned;
     }
 
     /* methods GET */
@@ -132,38 +152,53 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
     public async getBays(stub: Stub) {
         this.logger.info('########### getBays ###########');
-        let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
-        let bays = await Transform.iteratorToObjectList(iterator);
-
-        return bays;
+        try {
+            let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
+            let bays = await Transform.iteratorToObjectList(iterator);
+            return bays;
+        } catch (err) {
+            throw new Error(err);
+        }
     }
 
     public async getItemsById(stub: Stub, id: string) {
         this.logger.info("########### getItemsById ###########");
         if (id == null || id == '') {
             this.logger.error("getItemsById ERROR: id is empty or null!");
-            return null;
+            throw new Error('getItemsById ERROR: id is empty or null!');
         }
-        return await stub.getState(id);
+        try {
+            let keyItem: string = await this.generateKey(stub, "ITEM", id);
+            let item = await stub.getState(keyItem);
+            return item;
+        } catch (e) {
+            this.logger.error(
+                "getItemsById ERROR: Item not found with this id: " + id
+            );
+            return new Error(e);
+        }
     }
 
     public async getItemsByDescription(stub: Stub, desc: string) {
-        this.logger.info("########### getItemsByDescription ###########");
         let arrayItem = Array<ConveyorItem>();
-        if (desc == null || desc == '') {
-            this.logger.error(
-                "getItemsByDescription ERROR: desc is empty or null!"
-            );
-            return null;
+        this.logger.info('########### getItemsByDescription ###########');
+        if (desc == null || desc == "") {
+            this.logger.error('getItemsByDescription ERROR: desc is empty or null!');
+            return new Error('getItemsByDescription ERROR: desc is empty or null!');
         }
-        let iterator = await stub.getStateByPartialCompositeKey("ITEM", []);
-        let items = await Transform.iteratorToObjectList(iterator);
-        for (let item of items) {
-            let conveyorItem = item as ConveyorItem;
-            if (conveyorItem.type.description == desc)
-                arrayItem.push(conveyorItem);
+        try {
+            let iterator = await stub.getStateByPartialCompositeKey("ITEM", []);
+            let items = await Transform.iteratorToObjectList(iterator);
+            for (let item of items) {
+                let conveyorItem = item as ConveyorItem;
+                if (conveyorItem.type.description == desc)
+                    arrayItem.push(conveyorItem);
+            }
+            return arrayItem;
+        } catch (e) {
+            this.logger.error('getItemsByDescription ERROR: Item not found with this desc: ' + desc);
+            return new Error(e);
         }
-        return arrayItem;
     }
 
     /**
@@ -392,30 +427,35 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         this.logger.info('################ ATTENTION #########################');
         this.logger.info('########### controlBays  NOT IN FUNCTION ###########');
         this.logger.info('####################################################');
+        
+        try {
+            let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
+            let bays = await Transform.iteratorToObjectList(iterator);
+            let displayDate: Date = new Date();
+            let mill = displayDate.getTime();
+            mill = mill - 15000;
+            // let num = displayDate.setSeconds(displayDate.getSeconds() - 15);
 
-        let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
-        let bays = await Transform.iteratorToObjectList(iterator);
-        let displayDate: Date = new Date();
-        let mill = displayDate.getTime();
-        mill = mill - 15000;
-        // let num = displayDate.setSeconds(displayDate.getSeconds() - 15);
+            for (let bay of bays) {
+                let baia = bay as ConveyorBay;
+                // this.logger.info('CONTROL ConveyorBay with id: ' + baia.id);
+                let bayDate = new Date(baia.datetime).getTime();
+                if (bayDate < mill) {
+                    this.logger.info('ConveyorBay with id: ' + baia.id + ' switched OFF due to inactivity ');
+                    baia.enable = false;
+                    await this.doEditConveyorBay(stub, baia);
 
-        for (let bay of bays) {
-            let baia = bay as ConveyorBay;
-            // this.logger.info('CONTROL ConveyorBay with id: ' + baia.id);
-            let bayDate = new Date(baia.datetime).getTime();
-            if (bayDate < mill) {
-                this.logger.info('ConveyorBay with id: ' + baia.id + ' switched OFF due to inactivity ');
-                baia.enable = false;
-                this.doEditConveyorBay(stub, baia);
-
-                let items = new Array<ConveyorItem>();
-                items = await this.getItemsByBay(stub, baia.id);
-                for (let item of items) {
-                    this.assignBayToItem(stub, item);
+                    let items = new Array<ConveyorItem>();
+                    items = await this.getItemsByBay(stub, baia.id);
+                    for (let item of items) {
+                        await this.assignBayToItem(stub, item);
+                    }
                 }
             }
+        } catch (err) {
+            throw new Error(err);
         }
+    
     }
 
     /* methods POST */
@@ -427,51 +467,55 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
      * @param stub
      */
     private async assignBayToItem(stub: Stub, item: ConveyorItem) {
-        let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
-        let bays = await Transform.iteratorToObjectList(iterator);
-        let baysCompatible = Array<ConveyorBay>();
-        let baysAvailable = Array<ConveyorBay>();
+        try {
+            let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
+            let bays = await Transform.iteratorToObjectList(iterator);
+            let baysCompatible = Array<ConveyorBay>();
+            let baysAvailable = Array<ConveyorBay>();
 
-        for (let bay of bays) {
-            let baia = bay as ConveyorBay;
-            if (baia.enable) {
-                if (baia.capacity > baia.load) {
-                    //if (baia.preference.includes(item.type)) {
-                    let isFound = false;
-                    for (let pref of baia.preference) {
-                        if (pref.id === item.type.id) {
-                            baysCompatible.push(baia);
-                            isFound = true;
-                            break;
+            for (let bay of bays) {
+                let baia = bay as ConveyorBay;
+                if (baia.enable) {
+                    if (baia.capacity > baia.load) {
+                        //if (baia.preference.includes(item.type)) {
+                        let isFound = false;
+                        for (let pref of baia.preference) {
+                            if (pref.id === item.type.id) {
+                                baysCompatible.push(baia);
+                                isFound = true;
+                                break;
+                            }
+                        }
+                        if (!isFound) {
+                            baysAvailable.push(baia);
                         }
                     }
-                    if (!isFound) {
-                        baysAvailable.push(baia);
-                    }
                 }
             }
-        }
 
-        let baySelected: ConveyorBay;
-        if (baysCompatible.length != 0) {
-            if (baysCompatible.length != 1) {
-                this.OrderByArray(baysCompatible, 'load');
-            }
-            baySelected = baysCompatible[0];
-        } else {
-            if (baysAvailable.length != 0) {
-                if (baysAvailable.length != 1) {
-                    this.OrderByArray(baysAvailable, 'load');
+            let baySelected: ConveyorBay;
+            if (baysCompatible.length != 0) {
+                if (baysCompatible.length != 1) {
+                    this.OrderByArray(baysCompatible, 'load');
                 }
-
-                baySelected = baysAvailable[0];
+                baySelected = baysCompatible[0];
             } else {
-                this.logger.error(`assignBayToItem - ERROR: NO Bays available for Item` + item.id);
-                throw new Error(`assignBayToItem - ERROR: NO Bays available for Item ` + item.id);
+                if (baysAvailable.length != 0) {
+                    if (baysAvailable.length != 1) {
+                        this.OrderByArray(baysAvailable, 'load');
+                    }
+
+                    baySelected = baysAvailable[0];
+                } else {
+                    this.logger.error(`assignBayToItem - ERROR: NO Bays available for Item` + item.id);
+                    throw new Error(`assignBayToItem - ERROR: NO Bays available for Item ` + item.id);
+                }
             }
+            item.conveyorBay = baySelected;
+            return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);
+        } catch (err) {
+            throw new Error(err);
         }
-        item.conveyorBay = baySelected;
-        return this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);
     }
 
     private async OrderByArray(values: any[], orderType: any) {
@@ -492,7 +536,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         if (bay == null) {
             throw new Error(`doEditConveyorBay - ERROR: NO Bay in Input`);
         }
-
         try {
             let keyBay = await this.generateKey(stub, 'BAY', bay.id);
             return await stub.putState(keyBay, Buffer.from(JSON.stringify(bay)));
@@ -508,7 +551,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         this.logger.info('########### doConveyorItemAssignTo ###########');
 
         /* Control all bays on - off */
-        await this.controlBays(stub);
+        //@FIXME await this.controlBays(stub);
 
         this.logger.info('doConveyorItemAssignTo - state                   : ' + state);
         this.logger.info('doConveyorItemAssignTo - ConveyorItem.State.inBay: ' + ConveyorItem.State.inBay);
