@@ -140,7 +140,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
     public async getItemsById(stub: Stub, id: string) {
         this.logger.info("########### getItemsById ###########");
-        if (id == null || id == "") {
+        if (id == null || id == '') {
             this.logger.error("getItemsById ERROR: id is empty or null!");
             return null;
         }
@@ -150,7 +150,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
     public async getItemsByDescription(stub: Stub, desc: string) {
         this.logger.info("########### getItemsByDescription ###########");
         let arrayItem = Array<ConveyorItem>();
-        if (desc == null || desc == "") {
+        if (desc == null || desc == '') {
             this.logger.error(
                 "getItemsByDescription ERROR: desc is empty or null!"
             );
@@ -220,7 +220,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             await stub.putState(typeDryer.id, Buffer.from(JSON.stringify(typeDryer)));
         } catch (e) {
             this.logger.error(`INIT - ERROR: Something wrong in put State of types ` + e);
-            return shim.error(e);
+            throw new Error(e);
         }
 
         /* INIT 10 bays initial (with precerence) */
@@ -295,7 +295,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             await this.doEditConveyorBay(stub, bayTen);
         } catch (e) {
             this.logger.error(`INIT - ERROR: Something wrong in addPreference of bay ` + e);
-            return shim.error(e);
+            throw new Error(e);
         }
         // @FIXME Use Loop for repetitive tasks
         return await this.executeMethod('init', args, stub, true);
