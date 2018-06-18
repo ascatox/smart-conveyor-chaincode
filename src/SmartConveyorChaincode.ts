@@ -9,7 +9,6 @@ import { ConveyorItemType } from '.';
 import { ConveyorItem } from './ConveyorItem';
 import { EventPayload } from '../dist/src/EventPayload';
 
-
 /**
  * The SmartConveyorChaincode class is a base class containing handlers for the `Invoke()` and `Init()` function which are required
  * by `fabric-shim`. The `Init()` function can be overwritten by just implementing it in your SmartConveyorChaincode implementation
@@ -24,6 +23,182 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         this.logger.level = logLevel || 'debug';
         // this.logger = Helpers.getLoggerInstance(this.name, logLevel);
     }
+
+    /* methods POST */
+    /* storeConveyorItem() */
+    /* The storeConveyorItem method is called to insert a Item in the Conveyor Belt */
+    /* A exit Bay will be assigned to new Item */
+    /**
+     * Handle custom method execution
+     *
+     * @param stub
+     */
+    public async storeConveyorItem(stub: Stub, itemStr: string) {
+        this.logger.info('########### storeConveyorItem ###########');
+        if (!itemStr) {
+            return shim.error(`storeConveyorItem - ERROR: NO Item in Input`);
+        }
+        const item: ConveyorItem = JSON.parse(itemStr);
+        /* Control all bays on - off */
+        try {
+            await this.controlBays(stub);
+            await this.assignBayToItem(stub, item);
+            return shim.success(Buffer.from('ConveyorItem Stored'));
+        } catch (err) {
+            return shim.error('storeConveyorItem - ERROR: ' + err);
+
+        }
+    }
+
+    /* methods POST */
+    /* doEditConveyorBay() */
+    /* The editeConveyorBay method is called to update a Bay */
+    /**
+     * Handle custom method execution
+     *
+     * @param stub
+     */
+    public async editConveyorBay(stub: Stub, bay: string) {
+        this.logger.info('########### editConveyorBay ###########');
+        if (!bay) {
+            return shim.error(`editConveyorBay - ERROR: NO Bay in Input`);
+        }
+        try {
+            await this.doEditConveyorBay(stub, JSON.parse(bay));
+            return shim.success(Buffer.from('Bay Updated'));
+        } catch (e) {
+            this.logger.error(`editConveyorBay - ERROR: Something wrong in put State of bay ` + e);
+            return shim.error(e);
+        }
+
+    }
+
+    /* methods POST */
+    /* conveyorItemIntoConveyorBay() */
+    /* The conveyorItemIntoConveyorBay method is called to update a Bay and update the items in the Conveyor Belt */
+    /* When the Bay "captures" a Item from the Conveyor Belt, it is removed from the Map (state inBay)  */
+    /**
+     * Handle custom method execution
+     *
+     * @param stub
+     */
+    public async conveyorItemIntoConveyorBay(stub: Stub, item: ConveyorItem) {
+
+        await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBay);
+        return shim.success(Buffer.from('ConveyorItem into ConveyorBay'));
+    }
+
+    
+    /* methods POST */
+    /* conveyorItemOutConveyorBay() */
+    /* The conveyorItemOutConveyorBay method is called to update a Bay and update the items in the Conveyor Belt */
+    /* When the Bay release a Item, it is removed from the Bay and the state is Released */
+    /**
+     * Handle custom method execution
+     *
+     * @param stub
+     */
+    public async conveyorItemOutConveyorBay(stub: Stub, item: ConveyorItem) {
+        this.logger.info('########### conveyorItemOutConveyorBay ###########');
+
+        await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.released);
+        return shim.success(Buffer.from('ConveyorItem out of ConveyorBay'));
+    }
+
+    /* methods GET */
+    /* getItemsByBay() */
+    /* The getItemsByBay method is called to GET a subset of "Map" with all items assigned at this Bay */
+    /**
+     * Handle custom method execution
+     *
+     * @param stub
+     */
+    public async getItemsByBay(stub: Stub, bayId: string) {
+        this.logger.info('########### getItemsByBay ###########');
+
+        let itemsAssigned = Array<ConveyorItem>();
+        if (bayId == null || bayId == '') {
+            return itemsAssigned;
+        }
+        let iterator = await stub.getStateByPartialCompositeKey('ITEM', []);
+        let items    = await Transform.iteratorToObjectList(iterator);
+
+        for (let item of items) {
+            let elemItem = item as ConveyorItem;
+            if (elemItem.conveyorBay.id == bayId && elemItem.state == ConveyorItem.State.inBelt) {
+                itemsAssigned.push(elemItem);
+            }
+        }
+        return itemsAssigned;
+        // let jsonResp = JSON.stringify(itemsAssigned);
+        // return shim.success(Buffer.from(jsonResp));             
+    }
+
+    /* methods GET */
+    /* getBays() */
+    /* The getBays method is called to GET all Bays */
+    /**
+     * Handle custom method execution
+     *
+     * @param stub
+     */
+
+    public async getBays(stub: Stub) {
+    this.logger.info('########### getBays ###########');
+
+    let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
+    let bays     = await Transform.iteratorToObjectList(iterator);
+   
+    return bays;
+    // let jsonResp = JSON.stringify(bays);
+    //return shim.success(Buffer.from(jsonResp));
+}
+
+    public async getItemsById(stub: Stub, id: string) {
+    this.logger.info("########### getItemsById ###########");
+    if (id == null || id == "") {
+        this.logger.error("getItemsById ERROR: id is empty or null!");
+        return null;
+    }
+    try {
+        let item = await stub.getState(id);
+        let jsonResp = JSON.stringify(item);
+        return shim.success(Buffer.from(jsonResp));
+    } catch (e) {
+        this.logger.error(
+            "getItemsById ERROR: Item not found with this id: " + id
+        );
+        return shim.error(e);
+    }
+}
+
+    public async getItemsByDescription(stub: Stub, desc: string) {
+    let arrayItem = Array<ConveyorItem>();
+    this.logger.info("########### getItemsByDescription ###########");
+    if (desc == null || desc == "") {
+        this.logger.error(
+            "getItemsByDescription ERROR: desc is empty or null!"
+        );
+        return null;
+    }
+    try {
+        let iterator = await stub.getStateByPartialCompositeKey("ITEM", []);
+        let items = await Transform.iteratorToObjectList(iterator);
+        for (let item of items) {
+            let conveyorItem = item as ConveyorItem;
+            if (conveyorItem.type.description == desc)
+                arrayItem.push(conveyorItem);
+        }
+        let jsonResp = JSON.stringify(arrayItem);
+        return shim.success(Buffer.from(jsonResp));
+    } catch (e) {
+        this.logger.error(
+            "getItemsByDescription ERROR: Item not found with this desc: " +
+            desc
+        );
+        return shim.error(e);
+    }
+}
 
     /**
      * the name of the current SmartConveyorChaincode.
@@ -63,9 +238,8 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         let args = stub.getArgs();
 
         /* Init method initializes a List of Bay (allBays) and a List of Type (allTypes)  */
-
-
         /* INIT 5 types initial (Oven, Fridge, WashingMachine, Dishwasher, Dryer) */
+
         let typeOven = new ConveyorItemType('869990965260', 'oven');
         let typeFridge = new ConveyorItemType('869990965261', 'fridge');
         let typeWashingMachine = new ConveyorItemType('869990965262', 'washingmachine');
@@ -157,7 +331,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             this.logger.error(`INIT - ERROR: Something wrong in addPreference of bay ` + e);
             return shim.error(e);
         }
-         // @FIXME Use Loop for repetitive tasks
+        // @FIXME Use Loop for repetitive tasks
         return await this.executeMethod('init', args, stub, true);
     }
 
@@ -181,7 +355,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         let args = ret.params;
 
         this.logger.info('Invoke function: ' + fcn);
-
         return await this.executeMethod(ret.fcn, ret.params, stub);
     }
 
@@ -353,56 +526,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         });
     }
 
-    /* methods POST */
-    /* storeConveyorItem() */
-    /* The storeConveyorItem method is called to insert a Item in the Conveyor Belt */
-    /* A exit Bay will be assigned to new Item */
-    /**
-     * Handle custom method execution
-     *
-     * @param stub
-     */
-    private async storeConveyorItem(stub: Stub, itemStr: string) {
-        this.logger.info('########### storeConveyorItem ###########');
-        if (!itemStr) {
-            return shim.error(`storeConveyorItem - ERROR: NO Item in Input`);
-        }
-        const item: ConveyorItem = JSON.parse(itemStr);
-        /* Control all bays on - off */
-        try {
-            await this.controlBays(stub);
-            await this.assignBayToItem(stub, item);
-            return shim.success();
-        } catch (err) {
-            return shim.error('storeConveyorItem - ERROR: ' + err);
-
-        }
-    }
-
-
-    /* methods POST */
-    /* doEditConveyorBay() */
-    /* The editeConveyorBay method is called to update a Bay */
-    /**
-     * Handle custom method execution
-     *
-     * @param stub
-     */
-    private async editConveyorBay(stub: Stub, bay: string) {
-        this.logger.info('########### editConveyorBay ###########');
-        if (!bay) {
-            return shim.error(`editConveyorBay - ERROR: NO Bay in Input`);
-        }
-        try {
-            return await this.doEditConveyorBay(stub, JSON.parse(bay));
-        } catch (e) {
-            this.logger.error(`editConveyorBay - ERROR: Something wrong in put State of bay ` + e);
-            return shim.error(e);
-        }
-
-    }
-
-
     private async doEditConveyorBay(stub: Stub, bay: ConveyorBay) {
         this.logger.info('########### doEditConveyorBay ###########');
         if (bay == null) {
@@ -412,31 +535,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         try {
             let keyBay = await this.generateKey(stub, 'BAY', bay.id);
             return await stub.putState(keyBay, Buffer.from(JSON.stringify(bay)));
-
-            // return shim.success();
         } catch (e) {
             this.logger.error(`doEditConveyorBay - ERROR: Something wrong in put State of bay ` + e);
             this.logger.error(`doEditConveyorBay - BAY id: ${bay.id}`);
             throw new Error(e);
-            // return shim.error(e);
         }
-    }
-
-
-    /* methods POST */
-    /* conveyorItemIntoConveyorBay() */
-    /* The conveyorItemIntoConveyorBay method is called to update a Bay and update the items in the Conveyor Belt */
-    /* When the Bay "captures" a Item from the Conveyor Belt, it is removed from the Map (state inBay)  */
-    /**
-     * Handle custom method execution
-     *
-     * @param stub
-     */
-    private async conveyorItemIntoConveyorBay(stub: Stub, item: ConveyorItem) {
-
-
-        return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBay);
-
     }
 
 
@@ -446,18 +549,32 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         /* Control all bays on - off */
         await this.controlBays(stub);
 
+        this.logger.info('doConveyorItemAssignTo - state                   : ' + state);
+        this.logger.info('doConveyorItemAssignTo - ConveyorItem.State.inBay: ' + ConveyorItem.State.inBay);
+        this.logger.info('doConveyorItemAssignTo - item.conveyorBay.id  : ' +   item.conveyorBay.id); 
         if (state == ConveyorItem.State.inBay) {
-            item.conveyorBay.load++;
+            this.logger.info('doConveyorItemAssignTo - load ++              : ' +   item.conveyorBay.load); 
+            //item.conveyorBay.load++;
+            let carico = item.conveyorBay.load;
+            carico = carico + 1;
+            item.conveyorBay.load = carico;
         }
         if (state == ConveyorItem.State.released) {
-            item.conveyorBay.load--;
+            this.logger.info('doConveyorItemAssignTo - load --              : ' +   item.conveyorBay.load); 
+            // item.conveyorBay.load--;
+            let carico = item.conveyorBay.load;
+            carico = carico - 1;
+            item.conveyorBay.load = carico;
         }
 
         item.state = state;
+        this.logger.info('doConveyorItemAssignTo - item.state               : ' + item.state);
 
         try {
             let keyItem = await this.generateKey(stub, 'ITEM', item.id);
             await stub.putState(keyItem, Buffer.from(JSON.stringify(item)));
+            this.logger.info('doConveyorItemAssignTo - post stub.putState   : ' + keyItem);
+
         } catch (e) {
             this.logger.error(`doConveyorItemAssignTo - ERROR: Something wrong in put State of item ` + e);
             return shim.error(e);
@@ -465,139 +582,39 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
         try {
             let bay = item.conveyorBay;
+            this.logger.info('doConveyorItemAssignTo - pre doEditConveyorBay : ' + bay.id);
             await this.doEditConveyorBay(stub, bay);
         } catch (e) {
             this.logger.error(`doConveyorItemAssignTo - ERROR: Something wrong in put State of bay ` + e);
             return shim.error(e);
         }
         // NEW EVENT @FIXME: Understand if use await keyword @SEE Massi
+
+        this.logger.info('doConveyorItemAssignTo - pre createEvent(item) : ' + item.id);
         const event: EventPayload = this.createEvent(item);
+        this.logger.info('doConveyorItemAssignTo - post createEvent(item): ' + item.id);
         stub.setEvent('EVENT', Buffer.from(JSON.stringify(event)));
-
-    }
-
-    /* methods POST */
-    /* conveyorItemOutConveyorBay() */
-    /* The conveyorItemOutConveyorBay method is called to update a Bay and update the items in the Conveyor Belt */
-    /* When the Bay release a Item, it is removed from the Bay and the state is Released */
-    /**
-     * Handle custom method execution
-     *
-     * @param stub
-     */
-    private async conveyorItemOutConveyorBay(stub: Stub, item: ConveyorItem) {
-        this.logger.info('########### conveyorItemOutConveyorBay ###########');
-
-        return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.released);
-    }
-
-    /* methods GET */
-    /* getItemsByBay() */
-    /* The getItemsByBay method is called to GET a subset of "Map" with all items assigned at this Bay */
-    /**
-     * Handle custom method execution
-     *
-     * @param stub
-     */
-    private async getItemsByBay(stub: Stub, bayId: string) {
-        this.logger.info('########### getItemsByBay ###########');
-
-        let itemsAssigned = Array<ConveyorItem>();
-        if (bayId == null || bayId == '') {
-            return itemsAssigned;
-        }
-        let iterator = await stub.getStateByPartialCompositeKey('ITEM', []);
-        let items = await Transform.iteratorToObjectList(iterator);
-
-        for (let item of items) {
-            let elemItem = item as ConveyorItem;
-            if (elemItem.conveyorBay.id == bayId && elemItem.state == ConveyorItem.State.inBelt) {
-                itemsAssigned.push(elemItem);
-            }
-        }
-        return itemsAssigned;
-    }
-
-    /* methods GET */
-    /* getBays() */
-    /* The getBays method is called to GET all Bays */
-    /**
-     * Handle custom method execution
-     *
-     * @param stub
-     */
-    private async getBays(stub: Stub) {
-        this.logger.info('########### getBays ###########');
-
-        let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
-        let bays = await Transform.iteratorToObjectList(iterator);
-
-        return bays;
+        this.logger.info('doConveyorItemAssignTo - post setEvent         : ' );
     }
 
 
     private async  generateKey(stub: Stub, type: string, id: string) {
-        this.logger.info('########### generateKey ###########');
-        return stub.createCompositeKey(type, [id]);
-
+    this.logger.info('########### generateKey ###########');
+    return stub.createCompositeKey(type, [id]);
     }
 
     private createEvent(item: ConveyorItem) {
-        this.logger.info('########### createEvent ###########');
-        let event = {
-            serialNumberItem: item.id,
-            itemType: JSON.stringify(item.type),
-            state: item.state,
-            bayId: item.conveyorBay.id,
-            bayCapacity: item.conveyorBay.capacity,
-            bayLoad: item.conveyorBay.load
+    this.logger.info('########### createEvent ###########');
+    let event = {
+        serialNumberItem: item.id,
+        itemType: JSON.stringify(item.type),
+        state: item.state,
+        bayId: item.conveyorBay.id,
+        bayCapacity: item.conveyorBay.capacity,
+        bayLoad: item.conveyorBay.load
         };
-        return event;
-
+    return event;
     }
 
-    private async getItemsById(stub: Stub, id: string) {
-        this.logger.info("########### getItemsById ###########");
-        if (id == null || id == "") {
-            this.logger.error("getItemsById ERROR: id is empty or null!");
-            return null;
-        }
-        try {
-            let item = await stub.getState(id);
-            return item;
-        } catch (e) {
-            this.logger.error(
-                "getItemsById ERROR: Item not found with this id: " + id
-            );
-            return shim.error(e);
-        }
-    }
-
-    private async getItemsByDescription(stub: Stub, desc: string) {
-        let arrayItem = Array<ConveyorItem>();
-        this.logger.info("########### getItemsByDescription ###########");
-        if (desc == null || desc == "") {
-            this.logger.error(
-                "getItemsByDescription ERROR: desc is empty or null!"
-            );
-            return null;
-        }
-        try {
-            let iterator = await stub.getStateByPartialCompositeKey("ITEM", []);
-            let items = await Transform.iteratorToObjectList(iterator);
-            for (let item of items) {
-                let conveyorItem = item as ConveyorItem;
-                if (conveyorItem.type.description == desc)
-                    arrayItem.push(conveyorItem);
-            }
-            return arrayItem;
-        } catch (e) {
-            this.logger.error(
-                "getItemsByDescription ERROR: Item not found with this desc: " +
-                    desc
-            );
-            return shim.error(e);
-        }
-    }
 
 }
