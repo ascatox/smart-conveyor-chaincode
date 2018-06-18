@@ -220,7 +220,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             await stub.putState(typeDryer.id, Buffer.from(JSON.stringify(typeDryer)));
         } catch (e) {
             this.logger.error(`INIT - ERROR: Something wrong in put State of types ` + e);
-            throw new Error(e);
+            throw new Error('INIT - ERROR: Something wrong in put State of types' + e);
         }
 
         /* INIT 10 bays initial (with precerence) */
@@ -295,7 +295,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             await this.doEditConveyorBay(stub, bayTen);
         } catch (e) {
             this.logger.error(`INIT - ERROR: Something wrong in addPreference of bay ` + e);
-            throw new Error(e);
+            throw new Error('INIT - ERROR: Something wrong in addPreference of bay ' + e);
         }
         // @FIXME Use Loop for repetitive tasks
         return await this.executeMethod('init', args, stub, true);
@@ -392,7 +392,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         this.logger.info('################ ATTENTION #########################');
         this.logger.info('########### controlBays  NOT IN FUNCTION ###########');
         this.logger.info('####################################################');
-        /*
+
         let iterator = await stub.getStateByPartialCompositeKey('BAY', []);
         let bays = await Transform.iteratorToObjectList(iterator);
         let displayDate: Date = new Date();
@@ -416,11 +416,6 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
                 }
             }
         }
-        
-        return shim.success();
-
-        */
-
     }
 
     /* methods POST */
@@ -472,7 +467,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
                 baySelected = baysAvailable[0];
             } else {
                 this.logger.error(`assignBayToItem - ERROR: NO Bays available for Item` + item.id);
-                return shim.error(`assignBayToItem - ERROR: NO Bays available for Item` + item.id);
+                throw new Error(`assignBayToItem - ERROR: NO Bays available for Item ` + item.id);
             }
         }
         item.conveyorBay = baySelected;
@@ -495,7 +490,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
     private async doEditConveyorBay(stub: Stub, bay: ConveyorBay) {
         this.logger.info('########### doEditConveyorBay ###########');
         if (bay == null) {
-            return shim.error(`doEditConveyorBay - ERROR: NO Bay in Input`);
+            throw new Error(`doEditConveyorBay - ERROR: NO Bay in Input`);
         }
 
         try {
@@ -504,7 +499,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         } catch (e) {
             this.logger.error(`doEditConveyorBay - ERROR: Something wrong in put State of bay ` + e);
             this.logger.error(`doEditConveyorBay - BAY id: ${bay.id}`);
-            throw new Error(e);
+            throw new Error('doEditConveyorBay - ERROR: Something wrong in put State of bay ' + e);
         }
     }
 
@@ -543,7 +538,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
 
         } catch (e) {
             this.logger.error(`doConveyorItemAssignTo - ERROR: Something wrong in put State of item ` + e);
-            return shim.error(e);
+            throw new Error('doConveyorItemAssignTo - ERROR: Something wrong in put State of item ' + e);
         }
 
         try {
@@ -552,7 +547,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             await this.doEditConveyorBay(stub, bay);
         } catch (e) {
             this.logger.error(`doConveyorItemAssignTo - ERROR: Something wrong in put State of bay ` + e);
-            return shim.error(e);
+            throw new Error('doConveyorItemAssignTo - ERROR: Something wrong in put State of bay' + e);
         }
         // NEW EVENT @FIXME: Understand if use await keyword @SEE Massi
 
