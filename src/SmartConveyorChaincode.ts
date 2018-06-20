@@ -531,7 +531,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             carico = carico + 1;
             item.conveyorBay.load = carico;
         }
-        if (state == ConveyorItem.State.released) {
+        if (state == ConveyorItem.State.inBay) {
             // item.conveyorBay.load--;
             let carico = item.conveyorBay.load;
             carico = carico - 1;
