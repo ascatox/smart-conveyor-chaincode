@@ -477,12 +477,13 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             item.conveyorBay = baySelected;
             this.logger.info('assignBayToItem - ITEM IN BELT: ' + item.id + ' BAY DESTINATION ASSIGNED: ' + item.conveyorBay.id);
             
+            const ret = await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);
             // NEW EVENT EVENT === Conveyor Belt Situation
 
             const event: EventPayload = await this.createEvent(stub, item.conveyorBay);
             stub.setEvent('EVENT', Buffer.from(JSON.stringify(event)));
             
-            return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);
+            return ret; 
         } catch (err) {
             throw new Error(err);
         }
