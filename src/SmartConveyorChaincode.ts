@@ -83,6 +83,7 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             throw new Error('conveyorItemIntoConveyorBay - ERROR No input Item');
         }
         try {
+
             await this.doConveyorItemAssignTo(stub, JSON.parse(itemStr), ConveyorItem.State.inBay);
         } catch (err) {
             throw new Error(err);
@@ -474,16 +475,11 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
                     throw new Error(`assignBayToItem - ERROR: NO Bays available for Item ` + item.id);
                 }
             }
+
             item.conveyorBay = baySelected;
             this.logger.info('assignBayToItem - ITEM IN BELT: ' + item.id + ' BAY DESTINATION ASSIGNED: ' + item.conveyorBay.id);
-            
-            const ret = await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);
-            // NEW EVENT EVENT === Conveyor Belt Situation
 
-            const event: EventPayload = await this.createEvent(stub, item.conveyorBay);
-            stub.setEvent('EVENT', Buffer.from(JSON.stringify(event)));
-            
-            return ret; 
+            return await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);;
         } catch (err) {
             throw new Error(err);
         }
@@ -527,16 +523,17 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         //@FIXME await this.controlBays(stub);
 
         if (state == ConveyorItem.State.inBelt) {
-            //item.conveyorBay.load++;
-            let carico = item.conveyorBay.load;
-            carico = carico + 1;
-            item.conveyorBay.load = carico;
+            item.conveyorBay.load++;
+
         }
         if (state == ConveyorItem.State.inBay) {
-            // item.conveyorBay.load--;
-            let carico = item.conveyorBay.load;
-            carico = carico - 1;
-            item.conveyorBay.load = carico;
+            item.conveyorBay.load--;
+        }
+
+        if (state == ConveyorItem.State.inBelt || state == ConveyorItem.State.inBay) {
+            // NEW EVENT EVENT === Conveyor Belt Situation IN(inBelt) & OUT(inBay)
+            const event: EventPayload = await this.createEvent(stub, item.conveyorBay);
+            stub.setEvent('EVENT', Buffer.from(JSON.stringify(event)));
         }
 
         item.state = state;
