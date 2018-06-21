@@ -454,10 +454,9 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
             let iterator = await stub.getStateByPartialCompositeKey('ITEM', []);
             let items = await Transform.iteratorToObjectList(iterator);
 
-
             for (let itemLoop of items) {
                 let item = itemLoop as ConveyorItem;
-
+                // TODO change enum from state error to state suspended in ConveyorItem.ts
                 if (item.state == ConveyorItem.State.error) {
                     await this.doConveyorItemAssignTo(stub, item, ConveyorItem.State.inBelt);;
                 }
