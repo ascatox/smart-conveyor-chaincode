@@ -599,13 +599,20 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         // bay.load = number of state 'in belt' (asssigned exit bay) and state 'in bay' (out of belt). 
         this.logger.info('doConveyorItemAssignTo - ITEM IN STATE: ' + item.state + ' PRE UPDATE OF STATE');
         if (state == ConveyorItem.State.inBelt) {
+            if (item.state != null) {
+                this.logger.warning('doConveyorItemAssignTo - ITEM IN STATE NOT NULL : ' + item.state);
+            }
             item.conveyorBay.load++;
             item.state = ConveyorItem.State.inBelt;
             this.logger.info('doConveyorItemAssignTo - ITEM IN BELT: ' + item.id + ' BAY DESTINATION ASSIGNED: ' + item.conveyorBay.id);
             this.logger.info('doConveyorItemAssignTo - BAY with LOAD(++): ' + item.conveyorBay.load);
+            
         }
 
         if (state == ConveyorItem.State.released) {
+            if (item.state != ConveyorItem.State.inBay) {
+                this.logger.warning('doConveyorItemAssignTo - ITEM IN STATE NOT INBAY : ' + item.state);
+            }
             item.conveyorBay.load--;
             item.state = ConveyorItem.State.released;
             this.logger.info('doConveyorItemAssignTo - ITEM RELEASED: ' + item.id + ' in STATE : ' + item.state);
@@ -614,6 +621,9 @@ export class SmartConveyorChaincode implements ChaincodeInterface {
         }
 
         if (state == ConveyorItem.State.inBay) {
+            if (item.state != ConveyorItem.State.inBelt) {
+                this.logger.warning('doConveyorItemAssignTo - ITEM IN STATE NOT INBELT : ' + item.state);
+            }
             item.state = ConveyorItem.State.inBay;
             this.logger.info('doConveyorItemAssignTo - ITEM IN BAY: ' + item.id + ' in STATE : ' + item.state);
             this.logger.info('doConveyorItemAssignTo - BAY:   ' + item.conveyorBay.id + ' with LOAD: ' + item.conveyorBay.load);
