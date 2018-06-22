@@ -12,9 +12,9 @@ export class ConveyorItem {
 
 export module ConveyorItem {
     export enum State {
-        inBelt   = 'InConveyorBelt',
-        inBay    = 'InBay',
-        released = 'Released',
-        error    = 'Error'
+        inBelt    = 'InConveyorBelt',
+        inBay     = 'InBay',
+        released  = 'Released',
+        suspended = 'Suspended'
     }
 }
