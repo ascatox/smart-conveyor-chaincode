@@ -1,7 +1,7 @@
 /* tslint:disable */
 
 import { ChaincodeMockStub } from '@theledger/fabric-mock-stub';
-import { ChaincodeReponse } from 'fabric-shim';
+import { ChaincodeResponse } from 'fabric-shim';
 import { Transform } from '../src/utils/datatransform';
 import * as mocha from 'mocha';
 import { expect } from 'chai';
@@ -16,7 +16,7 @@ describe('Test Mockstub', () => {
 
         const stub = new ChaincodeMockStub('mock', chaincode);
         const args = ['arg1', 'arg2'];
-        const response: ChaincodeReponse = await stub.mockInit('uudif', args);
+        const response: ChaincodeResponse = await stub.mockInit('uudif', args);
         expect(response.status).to.deep.equal(200);
     });
     it('Should be able to control bays', async () => {
@@ -24,7 +24,7 @@ describe('Test Mockstub', () => {
         const args = ['arg1', 'arg2'];
         await stub.mockInit('test', args);
 
-        const response: ChaincodeReponse = await stub.mockInvoke('test', ['controlBays']);
+        const response: ChaincodeResponse = await stub.mockInvoke('test', ['controlBays']);
         expect(response.status).to.deep.equal(200);
     });
     it('Should be able to store conveyor item', async () => {
@@ -49,7 +49,7 @@ describe('Test Mockstub', () => {
             conveyorBay: null,
             state: null
         };
-        const response: ChaincodeReponse = await stub.mockInvoke('test', ['storeConveyorItem', JSON.stringify(item)]);
+        const response: ChaincodeResponse = await stub.mockInvoke('test', ['storeConveyorItem', JSON.stringify(item)]);
         expect(response.status).to.deep.equal(200);
     });
     it('Should be able to edit conveyor bay', async () => {
@@ -59,7 +59,7 @@ describe('Test Mockstub', () => {
 
         const bay: ConveyorBay = new ConveyorBay('1', 10, 0, true, 1, new Date());
       
-        const response: ChaincodeReponse = await stub.mockInvoke('test', ['editConveyorBay', JSON.stringify(bay)]);
+        const response: ChaincodeResponse = await stub.mockInvoke('test', ['editConveyorBay', JSON.stringify(bay)]);
         expect(response.status).to.deep.equal(200);
     });
     it('Should be able to get all bays', async () => {
@@ -69,7 +69,7 @@ describe('Test Mockstub', () => {
 
         // const bay: ConveyorBay = new ConveyorBay('1', 10, 0, true, 1, new Date());
       
-        const response: ChaincodeReponse = await stub.mockInvoke('test', ['getBays']);
+        const response: ChaincodeResponse = await stub.mockInvoke('test', ['getBays']);
         expect(response.status).to.deep.equal(200);
     });
 });
